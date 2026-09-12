@@ -17,36 +17,92 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Setup Project Structure & Build Files
+      - name: Install System Gradle & Build Everything
         run: |
+          # 1. Gradle ve gerekli araçları sisteme kur
+          sudo apt-get update
+          sudo apt-get install -y gradle
+
+          # 2. Dizinleri eksiksiz oluştur
           mkdir -p app/src/main/java/com/quantum/shield
           mkdir -p app/src/main/assets
-          
+
+          # 3. Varsa mevcut dosyaları taşı, yoksa atla
           if [ -f "MainActivity.java" ]; then cp MainActivity.java app/src/main/java/com/quantum/shield/; fi
           if [ -f "QuantumVpnService.java" ]; then cp QuantumVpnService.java app/src/main/java/com/quantum/shield/; fi
           if [ -f "index.html" ]; then cp index.html app/src/main/assets/; fi
 
-          printf '<manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.quantum.shield">\n    <application android:label="QuantumShield" android:theme="@android:style/Theme.NoTitleBar.Fullscreen">\n        <activity android:name=".MainActivity" android:exported="true">\n            <intent-filter>\n                <action android:name="android.intent.action.MAIN" />\n                <category android:name="android.intent.category.LAUNCHER" />\n            </intent-filter>\n        </activity>\n        <service android:name=".QuantumVpnService" android:permission="android.permission.BIND_VPN_SERVICE" android:exported="true">\n            <intent-filter>\n                <action android:name="android.net.VpnService" />\n            </intent-filter>\n        </service>\n    </application>\n</manifest>' > app/src/main/AndroidManifest.xml
+          # 4. AndroidManifest.xml dosyasını doğrudan oluştur
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.quantum.shield">
+              <application
+                  android:label="QuantumShield"
+                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+                  <service
+                      android:name=".QuantumVpnService"
+                      android:permission="android.permission.BIND_VPN_SERVICE"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.net.VpnService" />
+                      </intent-filter>
+                  </service>
+              </application>
+          </manifest>
+          EOF
 
-          printf 'pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }\ndependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }\ninclude \x27:app\x27\nrootProject.name=\x27QuantumShield\x27' > settings.gradle
+          # 5. settings.gradle dosyasını oluştur
+          cat << 'EOF' > settings.gradle
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          include ':app'
+          rootProject.name='QuantumShield'
+          EOF
 
-          printf 'plugins { id \x27com.android.application\x27 }\nandroid {\n    namespace \x27com.quantum.shield\x27\n    compileSdk 34\n    defaultConfig {\n        applicationId \x27com.quantum.shield\x27\n        minSdk 21\n        targetSdk 34\n        versionCode 1\n        versionName \x271.0\x27\n    }\n}' > app/build.gradle
+          # 6. app/build.gradle dosyasını oluştur
+          cat << 'EOF' > app/build.gradle
+          plugins {
+              id 'com.android.application'
+          }
+          android {
+              namespace 'com.quantum.shield'
+              compileSdk 34
+              defaultConfig {
+                  applicationId 'com.quantum.shield'
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName '1.0'
+              }
+          }
+          EOF
 
           echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - name: Download Gradle Wrapper Files
-        run: |
-          curl -s https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.properties -o gradle/wrapper/gradle-wrapper.properties || true
-          gradle -version || true
+          # 7. Hiçbir gradlew dosyasına ihtiyaç duymadan doğrudan sistem gradle ile derle
+          gradle assembleDebug
 
-      - name: Build APK with SDK Gradle
-        run: |
-          mvn --version || true
-          # Doğrudan sistem gradle kurulumunu kullanalım
-          sudo apt-get update && sudo apt-get install -y gradle
-          gradle assembleDebug || ./gradlew assembleDebug
-
-      - name: Upload APK
+      - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
         with:
           name: QuantumShield-APK
