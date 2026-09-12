@@ -24,8 +24,33 @@ jobs:
           
           if [ -f "MainActivity.java" ]; then cp MainActivity.java app/src/main/java/com/quantum/shield/; fi
           if [ -f "QuantumVpnService.java" ]; then cp QuantumVpnService.java app/src/main/java/com/quantum/shield/; fi
-          if [ -f "AndroidManifest.xml" ]; then mv AndroidManifest.xml app/src/main/; fi
           if [ -f "index.html" ]; then cp index.html app/src/main/assets/; fi
+
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+              package="com.quantum.shield">
+              <application
+                  android:label="QuantumShield"
+                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
+                  <activity
+                      android:name=".MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+                  <service
+                      android:name=".QuantumVpnService"
+                      android:permission="android.permission.BIND_VPN_SERVICE"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.net.VpnService" />
+                      </intent-filter>
+                  </service>
+              </application>
+          </manifest>
+          EOF
 
           cat << 'EOF' > settings.gradle
           pluginManagement {
