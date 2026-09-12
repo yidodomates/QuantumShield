@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MyApplication"
+rootProject.name = "QuantumShield"
 include(":app")
