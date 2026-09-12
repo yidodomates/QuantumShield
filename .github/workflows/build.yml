@@ -1,104 +1,18 @@
-name: Build Android APK
+cat << 'EOF' > app/build.gradle
+plugins {
+    id 'com.android.application' version '8.2.2'
+}
 
-on:
-  push:
-    branches: [ main ]
+android {
+    namespace 'com.quantum.shield'
+    compileSdk 34
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Set up JDK 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: 'temurin'
-          java-version: '17'
-
-      - name: Setup Project & Download Modern Gradle
-        run: |
-          mkdir -p app/src/main/java/com/quantum/shield
-          mkdir -p app/src/main/assets
-          
-          if [ -f "MainActivity.java" ]; then cp MainActivity.java app/src/main/java/com/quantum/shield/; fi
-          if [ -f "QuantumVpnService.java" ]; then cp QuantumVpnService.java app/src/main/java/com/quantum/shield/; fi
-          if [ -f "index.html" ]; then cp index.html app/src/main/assets/; fi
-
-          cat << 'EOF' > app/src/main/AndroidManifest.xml
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="com.quantum.shield">
-              <application
-                  android:label="QuantumShield"
-                  android:theme="@android:style/Theme.NoTitleBar.Fullscreen">
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-                  <service
-                      android:name=".QuantumVpnService"
-                      android:permission="android.permission.BIND_VPN_SERVICE"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.net.VpnService" />
-                      </intent-filter>
-                  </service>
-              </application>
-          </manifest>
-          EOF
-
-          cat << 'EOF' > settings.gradle
-          pluginManagement {
-              repositories {
-                  google()
-                  mavenCentral()
-                  gradlePluginPortal()
-              }
-          }
-          dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories {
-                  google()
-                  mavenCentral()
-              }
-          }
-          include ':app'
-          rootProject.name='QuantumShield'
-          EOF
-
-          cat << 'EOF' > app/build.gradle
-          plugins {
-              id 'com.android.application'
-          }
-          android {
-              namespace 'com.quantum.shield'
-              compileSdk 34
-              defaultConfig {
-                  applicationId 'com.quantum.shield'
-                  minSdk 21
-                  targetSdk 34
-                  versionCode 1
-                  versionName '1.0'
-              }
-          }
-          EOF
-
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
-
-          # Eski apt-get gradlew yerine güncel Gradle 8.5 indirip kuruyoruz
-          wget -q https://services.gradle.org/distributions/gradle-8.5-bin.zip
-          unzip -q gradle-8.5-bin.zip
-          export PATH=$PWD/gradle-8.5/bin:$PATH
-
-          gradle assembleDebug
-
-      - name: Upload APK Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: QuantumShield-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+    defaultConfig {
+        applicationId 'com.quantum.shield'
+        minSdk 21
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+}
+EOF
